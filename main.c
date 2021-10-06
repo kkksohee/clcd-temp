@@ -17,15 +17,12 @@
   ******************************************************************************
   */
 /* USER CODE END Header */
-/* Includes -----------------------------------------------------------------*/
+/* Includes ------------------------------------------------------------------*/
 #include "main.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include <stdio.h>
-#include <string.h>
-#include "mlx90614.h"
-#include "i2c-lcd.h"
+#include "string.h"
 
 /* USER CODE END Includes */
 
@@ -44,26 +41,29 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
-I2C_HandleTypeDef hi2c2;
-I2C_HandleTypeDef hi2c3;
+UART_HandleTypeDef huart3;
 
 /* USER CODE BEGIN PV */
 
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
-//static uint8_t num[100];
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
-static void MX_I2C2_Init(void);
-static void MX_I2C3_Init(void);
+static void MX_USART3_UART_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+#define FALSE  0
+#define TRUE  1
 
+uint8_t count=0;
+uint8_t rcvd_data;
+uint8_t dataBuffer[100];
+uint8_t reception_complete=FALSE;
 /* USER CODE END 0 */
 
 /**
@@ -73,11 +73,8 @@ static void MX_I2C3_Init(void);
 int main(void)
 {
   /* USER CODE BEGIN 1 */
-	float temp_obj1, temp_obj2, temp_amb;
-	char num[10];
-	char ch[10];
-	int row=0;
-	int col=0;
+	char *data="Hello world!!! \r\n";
+	uint8_t num[100];
 
   /* USER CODE END 1 */
 
@@ -99,41 +96,8 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
-  MX_I2C2_Init();
-  MX_I2C3_Init();
+  MX_USART3_UART_Init();
   /* USER CODE BEGIN 2 */
-//  sprintf(ch,"%4d",1233);
-//  sprintf(ch,"%4.2f",-12.33);
-
-
-
-  lcd_init ();
-
-//  lcd_clear ();
-//  	  lcd_put_cur(0, 0);
-//  	  sprintf(num,"%f",-1.1);
-//  	  lcd_send_string(num);
-
-  MLX90614_ReadReg(MLX90614_DEFAULT_SA, MLX90614_TOMIN, MLX90614_DBG_ON);
-	MLX90614_ReadReg(MLX90614_DEFAULT_SA, MLX90614_TOMAX, MLX90614_DBG_ON);
-	MLX90614_ReadReg(MLX90614_DEFAULT_SA, MLX90614_PWMCTRL, MLX90614_DBG_ON);
-	MLX90614_ReadReg(MLX90614_DEFAULT_SA, MLX90614_TARANGE, MLX90614_DBG_ON);
-	MLX90614_ReadReg(MLX90614_DEFAULT_SA, MLX90614_EMISSIVITY, MLX90614_DBG_ON);
-	MLX90614_ReadReg(MLX90614_DEFAULT_SA, MLX90614_CFG1, MLX90614_DBG_ON);
-	MLX90614_ReadReg(MLX90614_DEFAULT_SA, MLX90614_SA, MLX90614_DBG_ON);
-	MLX90614_ReadReg(MLX90614_DEFAULT_SA, MLX90614_ID1, MLX90614_DBG_ON);
-	MLX90614_ReadReg(MLX90614_DEFAULT_SA, MLX90614_ID2, MLX90614_DBG_ON);
-	MLX90614_ReadReg(MLX90614_DEFAULT_SA, MLX90614_ID3, MLX90614_DBG_ON);
-	MLX90614_ReadReg(MLX90614_DEFAULT_SA, MLX90614_ID4, MLX90614_DBG_ON);
-
-	MLX90614_WriteReg(MLX90614_DEFAULT_SA, MLX90614_CFG1, 0xB7C0);
-
-	MLX90614_ReadReg(MLX90614_DEFAULT_SA, MLX90614_CFG1, MLX90614_DBG_ON);
-
-	MLX90614_WriteReg(MLX90614_DEFAULT_SA, MLX90614_PWMCTRL, 0x1405);
-
-	MLX90614_ReadReg(MLX90614_DEFAULT_SA, MLX90614_PWMCTRL, MLX90614_DBG_ON);
-
 
   /* USER CODE END 2 */
 
@@ -141,26 +105,28 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-	  temp_obj1 = MLX90614_ReadTemp(MLX90614_DEFAULT_SA, MLX90614_TOBJ1);
-	  HAL_Delay(500);
-	  temp_obj2 = MLX90614_ReadTemp(MLX90614_DEFAULT_SA, MLX90614_TOBJ2);;
-	  HAL_Delay(500);
-	  temp_amb = MLX90614_ReadTemp(MLX90614_DEFAULT_SA, MLX90614_TAMB);;
-	  HAL_Delay(500);
 
-	  lcd_clear ();
-	  lcd_put_cur(0, 0);
-	  memset(num,0,10);
-	  sprintf(num,"%4.5f",temp_obj1);
-	  lcd_send_string(num);
-//	  lcd_send_string("Hello world");
+//	  tx
+//	  sprintf((char *)num,"%4.2f",-11.1);
+
+//	  HAL_UART_Transmit(&huart3, (char *)num, strlen((char *)num), HAL_MAX_DELAY);
+	  HAL_UART_Transmit(&huart3, (uint8_t *)data, strlen(data), HAL_MAX_DELAY);
 	  HAL_Delay(2000);
 
-  }
+	  // RX
+//	  while(reception_complete != TRUE)
+//		  HAL_UART_Receive_IT(&huart3, &rcvd_data, 1);
+//
+//	  if(reception_complete ==TRUE){
+//		  HAL_UART_Transmit(&huart3, dataBuffer, count, HAL_MAX_DELAY);
+//		  memset(dataBuffer,0,100);
+//		  count=0;
+//		  reception_complete=FALSE;
+//	  }
+ }
   /* USER CODE END 3 */
 }
 
@@ -187,7 +153,7 @@ void SystemClock_Config(void)
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSI;
   RCC_OscInitStruct.PLL.PLLM = 8;
   RCC_OscInitStruct.PLL.PLLN = 168;
-  RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
+  RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV4;
   RCC_OscInitStruct.PLL.PLLQ = 7;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
   {
@@ -198,9 +164,9 @@ void SystemClock_Config(void)
   RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
                               |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
-  RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV2;
-  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV8;
-  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV4;
+  RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
+  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV4;
+  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV2;
 
   if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_2) != HAL_OK)
   {
@@ -209,94 +175,35 @@ void SystemClock_Config(void)
 }
 
 /**
-  * @brief I2C2 Initialization Function
+  * @brief USART3 Initialization Function
   * @param None
   * @retval None
   */
-static void MX_I2C2_Init(void)
+static void MX_USART3_UART_Init(void)
 {
 
-  /* USER CODE BEGIN I2C2_Init 0 */
+  /* USER CODE BEGIN USART3_Init 0 */
 
-  /* USER CODE END I2C2_Init 0 */
+  /* USER CODE END USART3_Init 0 */
 
-  /* USER CODE BEGIN I2C2_Init 1 */
+  /* USER CODE BEGIN USART3_Init 1 */
 
-  /* USER CODE END I2C2_Init 1 */
-  hi2c2.Instance = I2C2;
-  hi2c2.Init.ClockSpeed = 100000;
-  hi2c2.Init.DutyCycle = I2C_DUTYCYCLE_2;
-  hi2c2.Init.OwnAddress1 = 0;
-  hi2c2.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
-  hi2c2.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
-  hi2c2.Init.OwnAddress2 = 0;
-  hi2c2.Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
-  hi2c2.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
-  if (HAL_I2C_Init(&hi2c2) != HAL_OK)
+  /* USER CODE END USART3_Init 1 */
+  huart3.Instance = USART3;
+  huart3.Init.BaudRate = 115200;
+  huart3.Init.WordLength = UART_WORDLENGTH_8B;
+  huart3.Init.StopBits = UART_STOPBITS_1;
+  huart3.Init.Parity = UART_PARITY_NONE;
+  huart3.Init.Mode = UART_MODE_TX_RX;
+  huart3.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+  huart3.Init.OverSampling = UART_OVERSAMPLING_16;
+  if (HAL_UART_Init(&huart3) != HAL_OK)
   {
     Error_Handler();
   }
-  /** Configure Analogue filter
-  */
-  if (HAL_I2CEx_ConfigAnalogFilter(&hi2c2, I2C_ANALOGFILTER_ENABLE) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /** Configure Digital filter
-  */
-  if (HAL_I2CEx_ConfigDigitalFilter(&hi2c2, 0) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN I2C2_Init 2 */
+  /* USER CODE BEGIN USART3_Init 2 */
 
-  /* USER CODE END I2C2_Init 2 */
-
-}
-
-/**
-  * @brief I2C3 Initialization Function
-  * @param None
-  * @retval None
-  */
-static void MX_I2C3_Init(void)
-{
-
-  /* USER CODE BEGIN I2C3_Init 0 */
-
-  /* USER CODE END I2C3_Init 0 */
-
-  /* USER CODE BEGIN I2C3_Init 1 */
-
-  /* USER CODE END I2C3_Init 1 */
-  hi2c3.Instance = I2C3;
-  hi2c3.Init.ClockSpeed = 100000;
-  hi2c3.Init.DutyCycle = I2C_DUTYCYCLE_2;
-  hi2c3.Init.OwnAddress1 = 0;
-  hi2c3.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
-  hi2c3.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
-  hi2c3.Init.OwnAddress2 = 0;
-  hi2c3.Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
-  hi2c3.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
-  if (HAL_I2C_Init(&hi2c3) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /** Configure Analogue filter
-  */
-  if (HAL_I2CEx_ConfigAnalogFilter(&hi2c3, I2C_ANALOGFILTER_ENABLE) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /** Configure Digital filter
-  */
-  if (HAL_I2CEx_ConfigDigitalFilter(&hi2c3, 0) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN I2C3_Init 2 */
-
-  /* USER CODE END I2C3_Init 2 */
+  /* USER CODE END USART3_Init 2 */
 
 }
 
@@ -309,13 +216,24 @@ static void MX_GPIO_Init(void)
 {
 
   /* GPIO Ports Clock Enable */
-  __HAL_RCC_GPIOB_CLK_ENABLE();
-  __HAL_RCC_GPIOC_CLK_ENABLE();
-  __HAL_RCC_GPIOA_CLK_ENABLE();
+  __HAL_RCC_GPIOD_CLK_ENABLE();
 
 }
 
 /* USER CODE BEGIN 4 */
+ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
+{
+  if(rcvd_data =='\r')
+  {
+	  reception_complete=TRUE;
+	  dataBuffer[count++]='\r';
+
+  }
+  else
+  {
+	  dataBuffer[count++]=rcvd_data;
+  }
+}
 
 /* USER CODE END 4 */
 
